@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Consumo no Claude Code</title>
+<style>
+  /* As cores vêm de variáveis que o script troca conforme o estilo (Claude / Nosso) e o tema (claro / escuro). Os valores
+     abaixo são só o ponto de partida (estilo Claude, claro) para a página não piscar. */
+  :root {
+    --page: #faf9f5; --text: #1f1e1d; --muted: #73726c; --line: rgba(31,30,29,.12);
+    --card: #efeeea; --tile: #dddbd6; --empty: #dddbd6; --heat: #3b82f6; --accent: #2457c5;
+    --raio: 14px; --raio-tile: 8px; --borda-tile: transparent;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: var(--page); color: var(--text); font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  .wrap { max-width: 640px; margin: 0 auto; padding: 22px 16px 40px; }
+  .topo { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+  h1 { margin: 0; font-size: 20px; font-weight: 650; }
+  .sub { margin: 2px 0 0; color: var(--muted); font-size: 13px; }
+  .ctl { display: flex; gap: 6px; flex-wrap: wrap; }
+  .btn { font: inherit; font-size: 12.5px; color: var(--muted); background: transparent; border: 1px solid var(--line); border-radius: 8px; padding: 5px 10px; cursor: pointer; }
+  .btn:hover { color: var(--text); }
+  .btn[aria-pressed="true"] { color: var(--text); border-color: var(--muted); }
+  .btn:focus-visible, .aba:focus-visible, .faixa:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .card { background: var(--card); border-radius: var(--raio); padding: 14px; border: 1px solid transparent; }
+  .barra { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+  .abas, .faixas { display: flex; gap: 4px; }
+  .aba, .faixa { font: inherit; font-size: 13.5px; color: var(--muted); background: transparent; border: 1px solid transparent; border-radius: 8px; padding: 4px 10px; cursor: pointer; }
+  .aba:hover, .faixa:hover { color: var(--text); }
+  .aba[aria-selected="true"] { color: var(--text); background: var(--tile); }
+  .faixa[aria-pressed="true"] { color: var(--text); border: 2px solid var(--accent); padding: 3px 9px; }
+
+  .tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+  .tile { background: var(--tile); border: 1px solid var(--borda-tile); border-radius: var(--raio-tile); padding: 8px 10px; min-width: 0; }
+  .tile .rot { font-size: 12.5px; color: var(--muted); }
+  .tile .val { font-size: 17px; font-weight: 700; overflow-wrap: anywhere; line-height: 1.25; }
+  .heat { display: grid; grid-auto-flow: column; grid-template-rows: repeat(7, 1fr); gap: 3px; margin-top: 14px; }
+  .c { aspect-ratio: 1; border-radius: 3px; background: var(--empty); }
+  .c.fora { background: transparent; }
+  .c.l1 { background: color-mix(in srgb, var(--heat) 38%, var(--empty)); }
+  .c.l2 { background: color-mix(in srgb, var(--heat) 60%, var(--empty)); }
+  .c.l3 { background: color-mix(in srgb, var(--heat) 80%, var(--empty)); }
+  .c.l4 { background: var(--heat); }
+  .fun { margin: 12px 0 0; color: var(--muted); font-size: 13px; }
+
+  .modelos { display: grid; gap: 8px; }
+  .mod { background: var(--tile); border: 1px solid var(--borda-tile); border-radius: var(--raio-tile); padding: 9px 11px; }
+  .mod .linha { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+  .mod .nome { font-weight: 650; }
+  .mod .pct { color: var(--muted); font-size: 13px; }
+  .mod .trilho { height: 7px; border-radius: 4px; background: color-mix(in srgb, var(--text) 10%, transparent); margin: 6px 0 4px; overflow: hidden; }
+  .mod .trilho i { display: block; height: 100%; background: var(--heat); border-radius: 4px; }
+  .mod .det { color: var(--muted); font-size: 12.5px; }
+  .vazio { color: var(--muted); padding: 18px 4px; text-align: center; }
+
+  .nota { color: var(--muted); font-size: 12px; margin: 14px 2px 0; }
+  .credito { color: var(--muted); font-size: 12px; margin: 10px 2px 0; }
+  a { color: var(--accent); }
+  @media (max-width: 460px) { .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="topo">
+    <div>
+      <h1>Consumo no Claude Code</h1>
+      <p class="sub">Atualizado em <span id="gerado"></span> · dados só deste computador</p>
+    </div>
+    <div class="ctl">
+      <button type="button" class="btn" id="btEstilo" aria-label="Alternar o estilo do cartão"></button>
+      <button type="button" class="btn" id="btTema" aria-label="Alternar entre modo claro e modo escuro"></button>
+    </div>
+  </header>
+
+  <section class="card" aria-label="Cartão de consumo">
+    <div class="barra">
+      <div class="abas" role="tablist" aria-label="Visão">
+        <button type="button" class="aba" role="tab" data-aba="geral" aria-selected="true">Visão Geral</button>
+        <button type="button" class="aba" role="tab" data-aba="modelos" aria-selected="false">Modelos</button>
+      </div>
+      <div class="faixas" role="group" aria-label="Período">
+        <button type="button" class="faixa" data-faixa="0" aria-pressed="true">Todos</button>
+        <button type="button" class="faixa" data-faixa="30" aria-pressed="false">30d</button>
+        <button type="button" class="faixa" data-faixa="7" aria-pressed="false">7d</button>
+      </div>
+    </div>
+    <div id="painel"></div>
+    <p class="fun" id="fun"></p>
+  </section>
+
+  <p class="nota">
+    <strong>Tokens</strong> = entrada + saída de cada linha do transcript do Claude Code (sem cache; uma resposta aparece em
+    várias linhas e todas contam) — uma estimativa da conta do painel original, não uma cópia garantida. <strong>Mensagens</strong>
+    = linhas de mensagem do usuário e do assistente. <strong>Sessões</strong> = conversas distintas. O Claude Code apaga
+    transcripts antigos depois de um tempo, então o histórico começa no que ainda existia na primeira vez que o script rodou.
+    Livros: ≈ 1,33 token por palavra (estimativa).
+  </p>
+  <p class="credito">{{CREDITO}}</p>
+</div>
+
+<script>
+{{DADOS}}
+</script>
+<script>
+(function () {
+  "use strict";
+  const CARD = window.CARD || { dias: [], hoje: "", gerado: "" };
+  const DIAS = CARD.dias;
+  const $ = s => document.querySelector(s);
+  const salvar = (k, v) => { try { localStorage.setItem(k, v); } catch (e) { /* vale só nesta visita */ } };
+  const ler = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
+
+  // ---- estilos e temas -----------------------------------------------------------------------------------------------
+  // "claude": cartão discreto, cinza e azul, como o painel original. "nosso": cartão com contorno e as cores Rave.
+  const PAL = {
+    claude: {
+      claro:  { page: "#faf9f5", text: "#1f1e1d", muted: "#73726c", line: "rgba(31,30,29,.12)", card: "#efeeea", tile: "#dddbd6", empty: "#dddbd6", heat: "#3b82f6", accent: "#2457c5", raio: "14px", raioTile: "8px", bordaTile: "transparent" },
+      escuro: { page: "#1a1918", text: "#f5f4ee", muted: "#a3a29a", line: "rgba(255,255,255,.14)", card: "#262523", tile: "#363530", empty: "#363530", heat: "#5b9bf8", accent: "#7aa7ff", raio: "14px", raioTile: "8px", bordaTile: "transparent" }
+    },
+    nosso: {
+      claro:  { page: "#f9f9f7", text: "#0b0b0b", muted: "#6b6a64", line: "rgba(11,11,11,.12)", card: "#ffffff", tile: "#f6f5f1", empty: "#e6e5df", heat: "#4fb800", accent: "#3c14c8", raio: "12px", raioTile: "10px", bordaTile: "rgba(11,11,11,.10)" },
+      escuro: { page: "#0d0d0d", text: "#ffffff", muted: "#a3a29a", line: "rgba(255,255,255,.14)", card: "#1a1a19", tile: "#232322", empty: "#2e2e2c", heat: "#7de10f", accent: "#8f78ff", raio: "12px", raioTile: "10px", bordaTile: "rgba(255,255,255,.10)" }
+    }
+  };
+  const sysEscuro = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : { matches: false, addEventListener() {} };
+  let estilo = ler("card-estilo") === "nosso" ? "nosso" : "claude";
+  let tema = ler("card-tema");                       // "claro" | "escuro" | null (segue o sistema)
+  const escuro = () => tema ? tema === "escuro" : !!sysEscuro.matches;
+  function aplicaPaleta() {
+    const p = PAL[estilo][escuro() ? "escuro" : "claro"], r = document.documentElement.style;
+    r.setProperty("--page", p.page); r.setProperty("--text", p.text); r.setProperty("--muted", p.muted); r.setProperty("--line", p.line);
+    r.setProperty("--card", p.card); r.setProperty("--tile", p.tile); r.setProperty("--empty", p.empty); r.setProperty("--heat", p.heat);
+    r.setProperty("--accent", p.accent); r.setProperty("--raio", p.raio); r.setProperty("--raio-tile", p.raioTile); r.setProperty("--borda-tile", p.bordaTile);
+    r.colorScheme = escuro() ? "dark" : "light";
+    $("#btEstilo").textContent = "Estilo: " + (estilo === "claude" ? "Claude" : "Nosso");
+    $("#btTema").textContent = escuro() ? "☀ Modo claro" : "☾ Modo escuro";
+  }
+  $("#btEstilo").addEventListener("click", () => { estilo = estilo === "claude" ? "nosso" : "claude"; salvar("card-estilo", estilo); aplicaPaleta(); });
+  $("#btTema").addEventListener("click", () => { tema = escuro() ? "claro" : "escuro"; salvar("card-tema", tema); aplicaPaleta(); });
+  if (sysEscuro.addEventListener) sysEscuro.addEventListener("change", aplicaPaleta);
+
+  // ---- utilidades ---------------------------------------------------------------------------------------------------
+  const pad = n => String(n).padStart(2, "0");
+  const chaveDia = d => d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+  const doDia = s => new Date(+s.slice(0, 4), +s.slice(5, 7) - 1, +s.slice(8, 10));
+  const fmtTok = n => {
+    if (n >= 1e9) return (n / 1e9).toLocaleString("pt-BR", { maximumFractionDigits: 1 }) + "B";
+    if (n >= 1e6) return (n / 1e6).toLocaleString("pt-BR", { maximumFractionDigits: 1 }) + "M";
+    if (n >= 1e3) return (n / 1e3).toLocaleString("pt-BR", { maximumFractionDigits: n >= 1e5 ? 0 : 1 }) + "k";
+    return String(Math.round(n));
+  };
+  const fmtInt = n => Math.round(n).toLocaleString("pt-BR");
+  const nomeModelo = raw => {   // "claude-opus-5-5" -> "Opus 5.5"; "claude-haiku-4-5-20251001" -> "Haiku 4.5"
+    const m = /^claude-(?:(\d+)-?(\d+)?-)?([a-z]+)(?:-(\d+)(?:-(\d{1,2}))?)?(?:-\d{8})?$/.exec(raw);
+    if (!m) return raw;
+    const nome = m[3].charAt(0).toUpperCase() + m[3].slice(1);
+    const ver = m[4] ? m[4] + (m[5] ? "." + m[5] : "") : (m[1] ? m[1] + (m[2] ? "." + m[2] : "") : "");
+    return ver ? nome + " " + ver : nome;
+  };
+  const el = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt !== undefined) e.textContent = txt; return e; };
+
+  // ---- dados do período ---------------------------------------------------------------------------------------------
+  const hoje = CARD.hoje || (DIAS.length ? DIAS[DIAS.length - 1].d : chaveDia(new Date()));
+  const ativo = d => d.m > 0 || d.p > 0;
+  function doPeriodo(n) {   // n = 0: tudo; senão os últimos n dias (contando hoje)
+    if (!n) return DIAS;
+    const ini = doDia(hoje); ini.setDate(ini.getDate() - (n - 1));
+    const k = chaveDia(ini);
+    return DIAS.filter(d => d.d >= k && d.d <= hoje);
+  }
+  function sequencias(lista, n) {   // sequências de dias seguidos com uso, dentro do período
+    const set = new Set(lista.filter(ativo).map(d => d.d));
+    if (!set.size) return { atual: 0, maior: 0 };
+    const primeiro = n ? (() => { const i = doDia(hoje); i.setDate(i.getDate() - (n - 1)); return i; })() : doDia(lista[0].d);
+    let maior = 0, corrente = 0;
+    for (const d = new Date(primeiro); chaveDia(d) <= hoje; d.setDate(d.getDate() + 1)) {
+      if (set.has(chaveDia(d))) { corrente++; if (corrente > maior) maior = corrente; } else corrente = 0;
+    }
+    // atual: termina hoje; se hoje ainda não teve uso, vale a sequência que terminou ontem
+    let atual = 0; const c = doDia(hoje);
+    if (!set.has(chaveDia(c))) c.setDate(c.getDate() - 1);
+    while (set.has(chaveDia(c))) { atual++; c.setDate(c.getDate() - 1); }
+    return { atual, maior };
+  }
+
+  // ---- mapa de calor: 7 linhas (dom–sáb) × semanas, sempre as últimas semanas disponíveis -----------------------------
+  function mapaDeCalor() {
+    const SEMANAS = 26;
+    const fim = doDia(hoje);
+    const dom = new Date(fim); dom.setDate(dom.getDate() - dom.getDay() - (SEMANAS - 1) * 7);   // domingo da primeira coluna
+    const porDia = {}; DIAS.forEach(d => { porDia[d.d] = d.p; });
+    const valores = DIAS.map(d => d.p).filter(v => v > 0).sort((a, b) => a - b);
+    const q = f => valores.length ? valores[Math.min(valores.length - 1, Math.floor(valores.length * f))] : 0;
+    const cortes = [q(0.25), q(0.5), q(0.75)];
+    const g = el("div", "heat"); g.style.gridTemplateColumns = "repeat(" + SEMANAS + ", minmax(0, 1fr))";
+    for (let col = 0; col < SEMANAS; col++) for (let lin = 0; lin < 7; lin++) {
+      const d = new Date(dom); d.setDate(dom.getDate() + col * 7 + lin);
+      const k = chaveDia(d), c = el("div", "c");
+      if (k > hoje) c.classList.add("fora");
+      else {
+        const v = porDia[k] || 0;
+        if (v > 0) c.classList.add(v > cortes[2] ? "l4" : v > cortes[1] ? "l3" : v > cortes[0] ? "l2" : "l1");
+        c.title = d.toLocaleDateString("pt-BR") + " · " + (v > 0 ? fmtTok(v) + " tokens" : "sem uso");
+      }
+      g.appendChild(c);
+    }
+    return g;
+  }
+
+  // ---- comparação com livros (estimativas: ≈ 1,33 token por palavra) -------------------------------------------------
+  const LIVROS = [
+    { nome: "Harry Potter e a Pedra Filosofal", t: 103000 },
+    { nome: "O Senhor dos Anéis (a trilogia)", t: 610000 },
+    { nome: "Guerra e Paz", t: 780000 },
+    { nome: "a Bíblia", t: 1050000 },
+    { nome: "a série completa de Harry Potter", t: 1440000 }
+  ];
+  function textoLivro(total) {
+    if (!(total > 0)) return "";
+    let livro = null;
+    for (const l of LIVROS) if (total / l.t >= 2) livro = l;   // o maior livro que ainda cabe pelo menos 2 vezes
+    if (!livro) { const l = LIVROS[0]; return "Você usou ~" + Math.round(total / l.t * 100) + "% dos tokens de " + l.nome + "."; }
+    const x = total / livro.t;
+    return "Você usou ~" + (x >= 10 ? fmtInt(x) : x.toLocaleString("pt-BR", { maximumFractionDigits: 1 })) + "× mais tokens do que " + livro.nome + ".";
+  }
+
+  // ---- telas --------------------------------------------------------------------------------------------------------
+  let aba = "geral", faixa = 0;
+  function tile(rot, val) { const t = el("div", "tile"); t.append(el("div", "rot", rot), el("div", "val", val)); return t; }
+  function telaGeral(lista) {
+    const raiz = el("div");
+    const sessoes = new Set(); let msgs = 0, tokens = 0; const horas = {}, modelos = {};
+    lista.forEach(d => {
+      d.s.forEach(x => sessoes.add(x)); msgs += d.m; tokens += d.p;
+      for (const h in d.h) horas[h] = (horas[h] || 0) + d.h[h];
+      for (const m in d.mod) modelos[m] = (modelos[m] || 0) + d.mod[m][0] + d.mod[m][1];
+    });
+    const ativos = lista.filter(ativo).length, seq = sequencias(lista, faixa);
+    const pico = Object.keys(horas).sort((a, b) => horas[b] - horas[a])[0];
+    const fav = Object.keys(modelos).sort((a, b) => modelos[b] - modelos[a])[0];
+    const t = el("div", "tiles");
+    t.append(tile("Sessões", fmtInt(sessoes.size)), tile("Mensagens", fmtInt(msgs)), tile("Total de tokens", fmtTok(tokens)), tile("Dias ativos", fmtInt(ativos)),
+      tile("Sequência atual", seq.atual + "d"), tile("Maior sequência", seq.maior + "d"), tile("Horário de pico", pico !== undefined ? pico + "h" : "—"), tile("Modelo favorito", fav ? nomeModelo(fav) : "—"));
+    raiz.append(t, mapaDeCalor());
+    $("#fun").textContent = textoLivro(tokens);
+    return raiz;
+  }
+  function telaModelos(lista) {
+    const mods = {};
+    lista.forEach(d => { for (const m in d.mod) { const x = mods[m] || (mods[m] = [0, 0]); x[0] += d.mod[m][0]; x[1] += d.mod[m][1]; } });
+    const nomes = Object.keys(mods).sort((a, b) => (mods[b][0] + mods[b][1]) - (mods[a][0] + mods[a][1]));
+    const total = nomes.reduce((a, m) => a + mods[m][0] + mods[m][1], 0);
+    $("#fun").textContent = "";
+    if (!nomes.length || !(total > 0)) return el("div", "vazio", "Sem uso de modelos nesse período.");
+    const g = el("div", "modelos");
+    nomes.forEach(m => {
+      const v = mods[m][0] + mods[m][1], pct = v / total * 100, c = el("div", "mod"), l = el("div", "linha");
+      l.append(el("span", "nome", nomeModelo(m)), el("span", "pct", pct.toLocaleString("pt-BR", { maximumFractionDigits: 1 }) + "% · " + fmtTok(v)));
+      const tr = el("div", "trilho"), i = el("i"); i.style.width = Math.max(1, pct).toFixed(1) + "%"; tr.appendChild(i);
+      c.append(l, tr, el("div", "det", "Entrada " + fmtTok(mods[m][0]) + " · Saída " + fmtTok(mods[m][1])));
+      g.appendChild(c);
+    });
+    return g;
+  }
+  function render() {
+    const lista = doPeriodo(faixa), painel = $("#painel");
+    painel.textContent = "";
+    if (!DIAS.length) { painel.appendChild(el("div", "vazio", "Ainda não há uso registrado.")); $("#fun").textContent = ""; return; }
+    painel.appendChild(aba === "geral" ? telaGeral(lista) : telaModelos(lista));
+    document.querySelectorAll(".aba").forEach(b => b.setAttribute("aria-selected", String(b.dataset.aba === aba)));
+    document.querySelectorAll(".faixa").forEach(b => b.setAttribute("aria-pressed", String(+b.dataset.faixa === faixa)));
+  }
+  document.querySelectorAll(".aba").forEach(b => b.addEventListener("click", () => { aba = b.dataset.aba; render(); }));
+  document.querySelectorAll(".faixa").forEach(b => b.addEventListener("click", () => { faixa = +b.dataset.faixa; render(); }));
+
+  $("#gerado").textContent = CARD.gerado || "";
+  aplicaPaleta();
+  render();
+})();
+</script>
+</body>
+</html>
