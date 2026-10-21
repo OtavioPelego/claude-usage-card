@@ -45,6 +45,11 @@
   .c.l3 { background: color-mix(in srgb, var(--heat) 80%, var(--empty)); }
   .c.l4 { background: var(--heat); }
   .fun { margin: 12px 0 0; color: var(--muted); font-size: 13px; }
+  /* balão de cada quadradinho: cantos arredondados; no tema claro fundo escuro com letra clara, no escuro o contrário */
+  .dica { position: fixed; z-index: 50; pointer-events: none; opacity: 0; transition: opacity .08s ease; white-space: nowrap;
+    background: var(--text); color: var(--page); border-radius: 10px; padding: 8px 12px; font-size: 14px; line-height: 1.35; font-weight: 500;
+    box-shadow: 0 6px 20px rgba(0,0,0,.22); }
+  .dica.show { opacity: 1; }
 
   .modelos { display: grid; gap: 8px; }
   .mod { background: var(--tile); border: 1px solid var(--borda-tile); border-radius: var(--raio-tile); padding: 9px 11px; }
@@ -203,12 +208,31 @@
       else {
         const v = porDia[k] || 0;
         if (v > 0) c.classList.add(v > cortes[2] ? "l4" : v > cortes[1] ? "l3" : v > cortes[0] ? "l2" : "l1");
-        c.title = d.toLocaleDateString("pt-BR") + " · " + (v > 0 ? fmtTok(v) + " tokens" : "sem uso");
+        c.dataset.dica = d.toLocaleDateString("pt-BR") + " · " + (v > 0 ? fmtTok(v) + " tokens" : "sem uso");
+        c.setAttribute("role", "img"); c.setAttribute("aria-label", c.dataset.dica);
       }
       g.appendChild(c);
     }
     return g;
   }
+
+  // ---- balão dos quadradinhos (mouse: ao passar por cima; toque: ao tocar; some ao sair, tocar fora, Esc ou rolar) ----------
+  const dica = el("div", "dica"); dica.setAttribute("role", "tooltip"); document.body.appendChild(dica);
+  function mostraDica(cel) {
+    dica.textContent = cel.dataset.dica; dica.classList.add("show");
+    const r = cel.getBoundingClientRect(), w = dica.offsetWidth, h = dica.offsetHeight;
+    const left = Math.min(Math.max(8, r.left + r.width / 2 - w / 2), window.innerWidth - w - 8);
+    let top = r.top - h - 8;
+    if (top < 8) top = r.bottom + 8;   // sem espaço em cima: vai para baixo
+    dica.style.left = left + "px"; dica.style.top = top + "px";
+  }
+  const escondeDica = () => dica.classList.remove("show");
+  const celula = ev => ev.target && ev.target.closest ? ev.target.closest(".c[data-dica]") : null;
+  document.addEventListener("pointerover", ev => { const c = celula(ev); if (c && ev.pointerType === "mouse") mostraDica(c); });
+  document.addEventListener("pointerout", ev => { if (celula(ev) && ev.pointerType === "mouse") escondeDica(); });
+  document.addEventListener("click", ev => { const c = celula(ev); if (c) mostraDica(c); else escondeDica(); });
+  document.addEventListener("keydown", ev => { if (ev.key === "Escape") escondeDica(); });
+  window.addEventListener("scroll", escondeDica, { passive: true });
 
   // ---- comparação com livros (estimativas: ≈ 1,33 token por palavra) -------------------------------------------------
   const LIVROS = [
