@@ -42,7 +42,7 @@ node scripts/build-card.js --open              # open it in your browser when do
 ## Two styles / Dois estilos
 
 A button at the top switches the card style (and light/dark): **Claude** — quiet, grey and blue, close to the original panel;
-**Nosso** — outlined, with the Rave colors. Your choice is saved in the browser. / Um botão no topo alterna o estilo
+**Rave** — outlined, with the Rave colors (lime, purple and blue). Your choice is saved in the browser. / Um botão no topo alterna o estilo
 (e o modo claro/escuro); a escolha fica salva no navegador.
 
 ## Honest limits / Limites

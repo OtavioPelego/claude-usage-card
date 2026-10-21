@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Consumo no Claude Code</title>
 <style>
-  /* As cores vêm de variáveis que o script troca conforme o estilo (Claude / Nosso) e o tema (claro / escuro). Os valores
+  /* As cores vêm de variáveis que o script troca conforme o estilo (Claude / Rave) e o tema (claro / escuro). Os valores
      abaixo são só o ponto de partida (estilo Claude, claro) para a página não piscar. */
   :root {
     --page: #faf9f5; --text: #1f1e1d; --muted: #73726c; --line: rgba(31,30,29,.12);
@@ -119,7 +119,7 @@
   const ler = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
 
   // ---- estilos e temas -----------------------------------------------------------------------------------------------
-  // "claude": cartão discreto, cinza e azul, como o painel original. "nosso": cartão com contorno e as cores Rave.
+  // "claude": cartão discreto, cinza e azul, como o painel original. "nosso" (aparece como "Rave"): cartão com contorno e as cores Rave. O nome interno "nosso" fica para não perder a escolha já salva.
   const PAL = {
     claude: {
       claro:  { page: "#faf9f5", text: "#1f1e1d", muted: "#73726c", line: "rgba(31,30,29,.12)", card: "#efeeea", tile: "#dddbd6", empty: "#dddbd6", heat: "#3b82f6", accent: "#2457c5", raio: "14px", raioTile: "8px", bordaTile: "transparent" },
@@ -140,7 +140,7 @@
     r.setProperty("--card", p.card); r.setProperty("--tile", p.tile); r.setProperty("--empty", p.empty); r.setProperty("--heat", p.heat);
     r.setProperty("--accent", p.accent); r.setProperty("--raio", p.raio); r.setProperty("--raio-tile", p.raioTile); r.setProperty("--borda-tile", p.bordaTile);
     r.colorScheme = escuro() ? "dark" : "light";
-    $("#btEstilo").textContent = "Estilo: " + (estilo === "claude" ? "Claude" : "Nosso");
+    $("#btEstilo").textContent = "Estilo: " + (estilo === "claude" ? "Claude" : "Rave");
     $("#btTema").textContent = escuro() ? "☀ Modo claro" : "☾ Modo escuro";
   }
   $("#btEstilo").addEventListener("click", () => { estilo = estilo === "claude" ? "nosso" : "claude"; salvar("card-estilo", estilo); aplicaPaleta(); });

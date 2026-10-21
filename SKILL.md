@@ -38,7 +38,7 @@ simulado). Se aparecer `PROBLEMA`, não entregue: rode de novo com `--full` e, s
 ## O que explicar à pessoa
 
 - **Dois estilos** (botão "Estilo" no topo): **Claude**, discreto, cinza e azul, parecido com o painel original; e
-  **Nosso**, com contorno e as cores Rave. Há também modo claro/escuro. A escolha fica salva no navegador.
+  **Rave**, com contorno e as cores Rave (verde-limão, roxo e azul). Há também modo claro/escuro. A escolha fica salva no navegador.
 - **Visão Geral:** oito quadros e o mapa de calor das últimas 26 semanas (domingo a sábado; quanto mais forte o quadrado,
   mais tokens naquele dia; passe o mouse para ver o dia). **Modelos:** quanto de cada modelo foi usado, com entrada e saída.
   **Todos / 30d / 7d** filtram os quadros e as sequências (o mapa de calor mostra sempre as últimas semanas).
